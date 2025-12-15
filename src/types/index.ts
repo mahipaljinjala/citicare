@@ -24,6 +24,16 @@ export type ComplaintCategory =
 
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
+export interface ComplaintImage {
+  id: string;
+  url: string;
+  type: 'before' | 'after';
+  uploadedBy: string;
+  uploadedByRole: UserRole;
+  uploadedAt: string;
+  caption?: string;
+}
+
 export interface Complaint {
   id: string;
   title: string;
@@ -34,10 +44,13 @@ export interface Complaint {
   location: {
     address: string;
     ward: string;
+    wardId?: string;
+    zoneId?: string;
+    areaId?: string;
     lat: number;
     lng: number;
   };
-  images: string[];
+  images: ComplaintImage[];
   citizenId: string;
   citizenName: string;
   assignedOfficerId?: string;
