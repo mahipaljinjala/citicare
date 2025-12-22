@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -7,8 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { suratZones, getWardsByZone, getAreasByWard, Zone, Ward, Area } from '@/data/suratData';
-import { MapPin } from 'lucide-react';
+import { useZones, useWards, useAreas } from '@/hooks/useLocations';
+import { MapPin, Loader2 } from 'lucide-react';
 
 interface LocationSelectorProps {
   selectedZone: string;
@@ -27,55 +26,42 @@ export function LocationSelector({
   onWardChange,
   onAreaChange,
 }: LocationSelectorProps) {
-  const [wards, setWards] = useState<Ward[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
+  const { data: zones, isLoading: zonesLoading } = useZones();
+  const { data: wards, isLoading: wardsLoading } = useWards(selectedZone || undefined);
+  const { data: areas, isLoading: areasLoading } = useAreas(selectedWard || undefined);
 
-  useEffect(() => {
-    if (selectedZone) {
-      const zoneWards = getWardsByZone(selectedZone);
-      setWards(zoneWards);
-      // Reset ward and area if zone changes
-      if (!zoneWards.find(w => w.id === selectedWard)) {
-        onWardChange('');
-        onAreaChange('');
-        setAreas([]);
-      }
-    } else {
-      setWards([]);
-      setAreas([]);
-    }
-  }, [selectedZone]);
+  const handleZoneChange = (value: string) => {
+    onZoneChange(value);
+    onWardChange('');
+    onAreaChange('');
+  };
 
-  useEffect(() => {
-    if (selectedWard) {
-      const wardAreas = getAreasByWard(selectedWard);
-      setAreas(wardAreas);
-      // Reset area if ward changes
-      if (!wardAreas.find(a => a.id === selectedArea)) {
-        onAreaChange('');
-      }
-    } else {
-      setAreas([]);
-    }
-  }, [selectedWard]);
+  const handleWardChange = (value: string) => {
+    onWardChange(value);
+    onAreaChange('');
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-medium">
         <MapPin className="h-4 w-4 text-accent" />
-        <span>Surat Municipal Corporation Area</span>
+        <span>Municipal Corporation Area</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Zone Selection */}
         <div className="space-y-2">
           <Label htmlFor="zone">Zone *</Label>
-          <Select value={selectedZone} onValueChange={onZoneChange}>
+          <Select value={selectedZone} onValueChange={handleZoneChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Select Zone" />
+              {zonesLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SelectValue placeholder="Select Zone" />
+              )}
             </SelectTrigger>
             <SelectContent>
-              {suratZones.map((zone) => (
+              {zones?.map((zone) => (
                 <SelectItem key={zone.id} value={zone.id}>
                   <span className="flex items-center gap-2">
                     <span className="text-xs bg-accent/10 text-accent px-1.5 py-0.5 rounded">
@@ -94,23 +80,31 @@ export function LocationSelector({
           <Label htmlFor="ward">Ward *</Label>
           <Select 
             value={selectedWard} 
-            onValueChange={onWardChange}
+            onValueChange={handleWardChange}
             disabled={!selectedZone}
           >
             <SelectTrigger>
-              <SelectValue placeholder={selectedZone ? "Select Ward" : "Select Zone first"} />
+              {wardsLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SelectValue placeholder={selectedZone ? "Select Ward" : "Select Zone first"} />
+              )}
             </SelectTrigger>
             <SelectContent>
-              {wards.map((ward) => (
-                <SelectItem key={ward.id} value={ward.id}>
-                  <span className="flex items-center gap-2">
-                    <span className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">
-                      {ward.code}
+              {wards && wards.length > 0 ? (
+                wards.map((ward) => (
+                  <SelectItem key={ward.id} value={ward.id}>
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">
+                        {ward.code}
+                      </span>
+                      {ward.name}
                     </span>
-                    {ward.name}
-                  </span>
-                </SelectItem>
-              ))}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>No wards available</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -124,14 +118,22 @@ export function LocationSelector({
             disabled={!selectedWard}
           >
             <SelectTrigger>
-              <SelectValue placeholder={selectedWard ? "Select Area (Optional)" : "Select Ward first"} />
+              {areasLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SelectValue placeholder={selectedWard ? "Select Area (Optional)" : "Select Ward first"} />
+              )}
             </SelectTrigger>
             <SelectContent>
-              {areas.map((area) => (
-                <SelectItem key={area.id} value={area.id}>
-                  {area.name}
-                </SelectItem>
-              ))}
+              {areas && areas.length > 0 ? (
+                areas.map((area) => (
+                  <SelectItem key={area.id} value={area.id}>
+                    {area.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>No areas available</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>

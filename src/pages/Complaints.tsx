@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { mockComplaints, complaintCategories } from '@/data/mockData';
+import { useComplaints } from '@/hooks/useComplaints';
 import { ComplaintCard } from '@/components/dashboard/ComplaintCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,29 +11,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Filter, PlusCircle } from 'lucide-react';
+import { Search, Filter, PlusCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
+const complaintCategories = [
+  { value: 'roads', label: 'Roads & Potholes', icon: '🛣️' },
+  { value: 'water', label: 'Water Supply', icon: '💧' },
+  { value: 'electricity', label: 'Electricity', icon: '⚡' },
+  { value: 'garbage', label: 'Garbage Collection', icon: '🗑️' },
+  { value: 'sewage', label: 'Sewage & Drainage', icon: '🚰' },
+  { value: 'street_lights', label: 'Street Lights', icon: '💡' },
+  { value: 'parks', label: 'Parks & Gardens', icon: '🌳' },
+  { value: 'other', label: 'Other Issues', icon: '📋' },
+];
+
 const statusFilters = [
   { value: 'all', label: 'All Status' },
-  { value: 'submitted', label: 'Submitted' },
-  { value: 'in_review', label: 'In Review' },
+  { value: 'pending', label: 'Pending' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'resolved', label: 'Resolved' },
-  { value: 'reopened', label: 'Reopened' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'closed', label: 'Closed' },
 ];
 
 export default function Complaints() {
   const { user } = useAuth();
+  const { data: complaints, isLoading } = useComplaints();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
-  const filteredComplaints = mockComplaints.filter((complaint) => {
+  const filteredComplaints = (complaints || []).filter((complaint) => {
     const matchesSearch =
       complaint.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      complaint.id.toLowerCase().includes(searchQuery.toLowerCase());
+      complaint.complaint_number.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === 'all' || complaint.status === statusFilter;
     const matchesCategory =
@@ -41,10 +53,18 @@ export default function Complaints() {
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const statusCounts = mockComplaints.reduce((acc, complaint) => {
+  const statusCounts = (complaints || []).reduce((acc, complaint) => {
     acc[complaint.status] = (acc[complaint.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -143,9 +163,19 @@ export default function Complaints() {
           <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
             <Filter className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-semibold mb-2">No complaints found</h3>
-            <p className="text-sm text-muted-foreground">
-              Try adjusting your filters or search query.
+            <p className="text-sm text-muted-foreground mb-4">
+              {complaints?.length === 0
+                ? "You haven't filed any complaints yet."
+                : 'Try adjusting your filters or search query.'}
             </p>
+            {user?.role === 'citizen' && complaints?.length === 0 && (
+              <Link to="/complaints/new">
+                <Button variant="accent">
+                  <PlusCircle className="mr-2 h-5 w-5" />
+                  File Your First Complaint
+                </Button>
+              </Link>
+            )}
           </div>
         )}
       </div>

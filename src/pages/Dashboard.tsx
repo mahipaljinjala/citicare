@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { RecentComplaints } from '@/components/dashboard/RecentComplaints';
 import { ComplaintsBarChart, ComplaintsStatusChart } from '@/components/dashboard/ComplaintsChart';
-import { mockComplaints } from '@/data/mockData';
+import { useComplaintStats } from '@/hooks/useComplaints';
 import {
   FileText,
   Clock,
@@ -12,17 +12,21 @@ import {
   Users,
   Building2,
   TrendingUp,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
 function CitizenDashboard() {
-  const totalComplaints = mockComplaints.length;
-  const openComplaints = mockComplaints.filter(
-    (c) => c.status === 'submitted' || c.status === 'in_review'
-  ).length;
-  const inProgress = mockComplaints.filter((c) => c.status === 'in_progress').length;
-  const resolved = mockComplaints.filter((c) => c.status === 'resolved').length;
+  const { data: stats, isLoading } = useComplaintStats();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -46,25 +50,25 @@ function CitizenDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Complaints"
-          value={totalComplaints}
+          value={stats?.total || 0}
           icon={FileText}
           iconColor="bg-accent/10 text-accent"
         />
         <StatCard
-          title="Open"
-          value={openComplaints}
+          title="Pending"
+          value={stats?.pending || 0}
           icon={Clock}
           iconColor="bg-warning/10 text-warning"
         />
         <StatCard
           title="In Progress"
-          value={inProgress}
+          value={stats?.in_progress || 0}
           icon={AlertTriangle}
           iconColor="bg-info/10 text-info"
         />
         <StatCard
           title="Resolved"
-          value={resolved}
+          value={stats?.resolved || 0}
           icon={CheckCircle}
           iconColor="bg-success/10 text-success"
         />
@@ -83,6 +87,16 @@ function CitizenDashboard() {
 }
 
 function OfficerDashboard() {
+  const { data: stats, isLoading } = useComplaintStats();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -94,26 +108,26 @@ function OfficerDashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Assigned Today"
-          value={5}
+          title="Total Complaints"
+          value={stats?.total || 0}
           icon={FileText}
           iconColor="bg-accent/10 text-accent"
         />
         <StatCard
-          title="Pending Action"
-          value={12}
+          title="Pending"
+          value={stats?.pending || 0}
           icon={Clock}
           iconColor="bg-warning/10 text-warning"
         />
         <StatCard
           title="In Progress"
-          value={8}
+          value={stats?.in_progress || 0}
           icon={AlertTriangle}
           iconColor="bg-info/10 text-info"
         />
         <StatCard
-          title="Resolved This Week"
-          value={23}
+          title="Resolved"
+          value={stats?.resolved || 0}
           icon={CheckCircle}
           iconColor="bg-success/10 text-success"
         />
@@ -130,38 +144,48 @@ function OfficerDashboard() {
 }
 
 function DepartmentHeadDashboard() {
+  const { data: stats, isLoading } = useComplaintStats();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Department Dashboard</h1>
         <p className="text-muted-foreground">
-          Roads & Infrastructure - Performance Overview
+          Department Performance Overview
         </p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Complaints"
-          value={245}
+          value={stats?.total || 0}
           icon={FileText}
           iconColor="bg-accent/10 text-accent"
         />
         <StatCard
-          title="Active Officers"
-          value={12}
-          icon={Users}
-          iconColor="bg-info/10 text-info"
-        />
-        <StatCard
-          title="Avg Resolution"
-          value="4.5 days"
+          title="Pending"
+          value={stats?.pending || 0}
           icon={Clock}
           iconColor="bg-warning/10 text-warning"
         />
         <StatCard
-          title="Resolution Rate"
-          value="81%"
-          icon={TrendingUp}
+          title="In Progress"
+          value={stats?.in_progress || 0}
+          icon={AlertTriangle}
+          iconColor="bg-info/10 text-info"
+        />
+        <StatCard
+          title="Resolved"
+          value={stats?.resolved || 0}
+          icon={CheckCircle}
           iconColor="bg-success/10 text-success"
         />
       </div>
@@ -177,6 +201,16 @@ function DepartmentHeadDashboard() {
 }
 
 function AdminDashboard() {
+  const { data: stats, isLoading } = useComplaintStats();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -189,30 +223,26 @@ function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Complaints"
-          value="1,234"
-          change="+12% from last month"
-          changeType="positive"
+          value={stats?.total || 0}
           icon={FileText}
           iconColor="bg-accent/10 text-accent"
         />
         <StatCard
-          title="Departments"
-          value={15}
-          icon={Building2}
-          iconColor="bg-info/10 text-info"
-        />
-        <StatCard
-          title="Active Officers"
-          value={89}
-          icon={Users}
+          title="Pending"
+          value={stats?.pending || 0}
+          icon={Clock}
           iconColor="bg-warning/10 text-warning"
         />
         <StatCard
-          title="Citizen Rating"
-          value="4.2/5"
-          change="+0.3 this month"
-          changeType="positive"
-          icon={TrendingUp}
+          title="In Progress"
+          value={stats?.in_progress || 0}
+          icon={AlertTriangle}
+          iconColor="bg-info/10 text-info"
+        />
+        <StatCard
+          title="Resolved"
+          value={stats?.resolved || 0}
+          icon={CheckCircle}
           iconColor="bg-success/10 text-success"
         />
       </div>

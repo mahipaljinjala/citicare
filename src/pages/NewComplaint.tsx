@@ -11,12 +11,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { complaintCategories } from '@/data/mockData';
 import { LocationSelector } from '@/components/complaint/LocationSelector';
 import { ImageUpload } from '@/components/complaint/ImageUpload';
-import { getZoneById, getWardById, getAreaById, SURAT_CENTER } from '@/data/suratData';
+import { useCreateComplaint } from '@/hooks/useComplaints';
 import { MapPin, Loader2, CheckCircle, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+const complaintCategories = [
+  { value: 'roads', label: 'Roads & Potholes', icon: '🛣️' },
+  { value: 'water', label: 'Water Supply', icon: '💧' },
+  { value: 'electricity', label: 'Electricity', icon: '⚡' },
+  { value: 'garbage', label: 'Garbage Collection', icon: '🗑️' },
+  { value: 'sewage', label: 'Sewage & Drainage', icon: '🚰' },
+  { value: 'street_lights', label: 'Street Lights', icon: '💡' },
+  { value: 'parks', label: 'Parks & Gardens', icon: '🌳' },
+  { value: 'other', label: 'Other Issues', icon: '📋' },
+];
 
 export default function NewComplaint() {
   const [title, setTitle] = useState('');
@@ -27,9 +37,9 @@ export default function NewComplaint() {
   const [selectedWard, setSelectedWard] = useState('');
   const [selectedArea, setSelectedArea] = useState('');
   const [images, setImages] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const createComplaint = useCreateComplaint();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,22 +53,31 @@ export default function NewComplaint() {
       return;
     }
 
-    setLoading(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    const zone = getZoneById(selectedZone);
-    const ward = getWardById(selectedWard);
-    const area = selectedArea ? getAreaById(selectedArea) : null;
-    
-    toast({
-      title: 'Complaint Submitted!',
-      description: `Your complaint has been registered for ${ward?.name}, ${zone?.name}. ID: SMC-2024-006`,
-    });
-    
-    navigate('/complaints');
-    setLoading(false);
+    try {
+      const result = await createComplaint.mutateAsync({
+        title,
+        description,
+        category,
+        address,
+        zone_id: selectedZone,
+        ward_id: selectedWard,
+        area_id: selectedArea || undefined,
+        images,
+      });
+      
+      toast({
+        title: 'Complaint Submitted!',
+        description: `Your complaint has been registered. ID: ${result.complaint_number}`,
+      });
+      
+      navigate('/complaints');
+    } catch (error: any) {
+      toast({
+        title: 'Failed to submit complaint',
+        description: error.message || 'Please try again later.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -66,7 +85,7 @@ export default function NewComplaint() {
       <div className="mb-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
           <Building2 className="h-4 w-4" />
-          <span>Surat Municipal Corporation</span>
+          <span>Municipal Corporation</span>
         </div>
         <h1 className="text-2xl font-bold">File a New Complaint</h1>
         <p className="text-muted-foreground">
@@ -154,22 +173,6 @@ export default function NewComplaint() {
               />
             </div>
           </div>
-
-          {/* Map Placeholder */}
-          <div className="rounded-lg border border-dashed border-border bg-secondary/30 p-6 text-center">
-            <div className="h-40 bg-gradient-to-br from-secondary to-secondary/50 rounded-lg flex items-center justify-center mb-3">
-              <div className="text-center">
-                <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm font-medium">Surat City Map</p>
-                <p className="text-xs text-muted-foreground">
-                  Lat: {SURAT_CENTER.lat.toFixed(4)}, Lng: {SURAT_CENTER.lng.toFixed(4)}
-                </p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Click on the map to select precise location (Map integration coming soon)
-            </p>
-          </div>
         </div>
 
         {/* Photo Upload Section */}
@@ -194,8 +197,8 @@ export default function NewComplaint() {
           >
             Cancel
           </Button>
-          <Button type="submit" variant="accent" disabled={loading} className="flex-1 md:flex-none">
-            {loading ? (
+          <Button type="submit" variant="accent" disabled={createComplaint.isPending} className="flex-1 md:flex-none">
+            {createComplaint.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Submitting...
