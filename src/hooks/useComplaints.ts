@@ -206,3 +206,80 @@ export function useComplaintStats() {
     enabled: !!session,
   });
 }
+
+export interface DbComment {
+  id: string;
+  complaint_id: string;
+  user_id: string | null;
+  content: string;
+  is_internal: boolean;
+  created_at: string;
+  profiles?: { full_name: string } | null;
+}
+
+export function useComplaintComments(complaintId: string) {
+  const { session } = useAuth();
+
+  return useQuery({
+    queryKey: ['complaint-comments', complaintId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('complaint_comments')
+        .select('*')
+        .eq('complaint_id', complaintId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Fetch user names separately
+      const comments = data || [];
+      const userIds = [...new Set(comments.filter(c => c.user_id).map(c => c.user_id))];
+      
+      let profilesMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds as string[]);
+        
+        profiles?.forEach(p => {
+          profilesMap[p.id] = p.full_name;
+        });
+      }
+      
+      return comments.map(c => ({
+        ...c,
+        profiles: c.user_id ? { full_name: profilesMap[c.user_id] || 'Unknown' } : null,
+      })) as DbComment[];
+    },
+    enabled: !!complaintId && !!session,
+  });
+}
+
+export function useAddComment() {
+  const queryClient = useQueryClient();
+  const { session } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ complaintId, content }: { complaintId: string; content: string }) => {
+      if (!session?.user?.id) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('complaint_comments')
+        .insert({
+          complaint_id: complaintId,
+          user_id: session.user.id,
+          content,
+          is_internal: false,
+        } as any)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['complaint-comments', variables.complaintId] });
+    },
+  });
+}
