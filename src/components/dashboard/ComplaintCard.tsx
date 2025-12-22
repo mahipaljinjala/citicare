@@ -1,21 +1,20 @@
-import { Complaint } from '@/types';
+import { DbComplaint } from '@/hooks/useComplaints';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Calendar, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 
 interface ComplaintCardProps {
-  complaint: Complaint;
+  complaint: DbComplaint;
   showActions?: boolean;
 }
 
 const statusLabels: Record<string, string> = {
-  submitted: 'Submitted',
-  in_review: 'In Review',
+  pending: 'Pending',
   in_progress: 'In Progress',
   resolved: 'Resolved',
-  reopened: 'Reopened',
+  rejected: 'Rejected',
+  closed: 'Closed',
 };
 
 const categoryIcons: Record<string, string> = {
@@ -36,12 +35,12 @@ export function ComplaintCard({ complaint, showActions = true }: ComplaintCardPr
     <div className="rounded-xl border border-border bg-card p-5 shadow-card transition-all hover:shadow-elegant animate-fade-in">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <span className="text-2xl">{categoryIcons[complaint.category]}</span>
+          <span className="text-2xl">{categoryIcons[complaint.category] || '📋'}</span>
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-foreground">{complaint.title}</h3>
               <Badge variant={statusVariant} className="text-xs">
-                {statusLabels[complaint.status]}
+                {statusLabels[complaint.status] || complaint.status}
               </Badge>
               {complaint.priority === 'urgent' && (
                 <Badge variant="urgent" className="text-xs">
@@ -59,14 +58,14 @@ export function ComplaintCard({ complaint, showActions = true }: ComplaintCardPr
       <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <MapPin className="h-3.5 w-3.5" />
-          {complaint.location.address}
+          {complaint.address || complaint.wards?.name || 'Location not specified'}
         </div>
         <div className="flex items-center gap-1">
           <Calendar className="h-3.5 w-3.5" />
-          {new Date(complaint.createdAt).toLocaleDateString()}
+          {new Date(complaint.created_at).toLocaleDateString()}
         </div>
         <span className="text-xs font-medium text-foreground/60">
-          ID: {complaint.id}
+          ID: {complaint.complaint_number}
         </span>
       </div>
 
@@ -74,7 +73,7 @@ export function ComplaintCard({ complaint, showActions = true }: ComplaintCardPr
         <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
           <div className="text-xs">
             <span className="text-muted-foreground">Department: </span>
-            <span className="font-medium">{complaint.department}</span>
+            <span className="font-medium">{complaint.departments?.name || 'Unassigned'}</span>
           </div>
           <Link to={`/complaints/${complaint.id}`}>
             <Button variant="ghost" size="sm" className="text-accent">
