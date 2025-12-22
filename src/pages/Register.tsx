@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,12 +15,19 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (password !== confirmPassword) {
       toast({
         title: 'Passwords do not match',
@@ -29,22 +36,40 @@ export default function Register() {
       });
       return;
     }
+
+    if (password.length < 6) {
+      toast({
+        title: 'Password too short',
+        description: 'Password must be at least 6 characters long.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
-    try {
-      await register(name, email, password);
+    
+    const { error } = await register(name, email, password);
+    
+    if (error) {
+      let message = 'Please try again later.';
+      if (error.message.includes('already registered')) {
+        message = 'An account with this email already exists. Please sign in instead.';
+      } else if (error.message) {
+        message = error.message;
+      }
+      
+      toast({
+        title: 'Registration failed',
+        description: message,
+        variant: 'destructive',
+      });
+      setLoading(false);
+    } else {
       toast({
         title: 'Registration successful!',
         description: 'Your account has been created. Welcome to CitiCare!',
       });
       navigate('/dashboard');
-    } catch (error) {
-      toast({
-        title: 'Registration failed',
-        description: 'Please try again later.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -150,7 +175,6 @@ export default function Register() {
                 placeholder="+91 9876543210"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                required
               />
             </div>
 
@@ -160,10 +184,11 @@ export default function Register() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Create a password"
+                  placeholder="Create a password (min 6 characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  minLength={6}
                 />
                 <button
                   type="button"

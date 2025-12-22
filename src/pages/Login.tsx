@@ -1,48 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { Shield, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { UserRole } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('citizen');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      await login(email, password, role);
+    
+    const { error } = await login(email, password);
+    
+    if (error) {
+      toast({
+        title: 'Login failed',
+        description: error.message || 'Please check your credentials and try again.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+    } else {
       toast({
         title: 'Welcome back!',
         description: 'You have successfully logged in.',
       });
       navigate('/dashboard');
-    } catch (error) {
-      toast({
-        title: 'Login failed',
-        description: 'Please check your credentials and try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -117,21 +115,6 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="role">Login As</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="citizen">Citizen</SelectItem>
-                  <SelectItem value="officer">Ward Officer / Engineer</SelectItem>
-                  <SelectItem value="department_head">Department Head</SelectItem>
-                  <SelectItem value="admin">Administrator</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -192,12 +175,6 @@ export default function Login() {
               Register here
             </Link>
           </p>
-
-          <div className="mt-8 p-4 rounded-lg bg-secondary/50 border border-border">
-            <p className="text-xs text-muted-foreground text-center">
-              <strong>Demo:</strong> Select any role and enter any email/password to login
-            </p>
-          </div>
         </div>
       </div>
     </div>
