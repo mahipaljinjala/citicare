@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
+import { StaffActionsPanel } from '@/components/complaint/StaffActionsPanel';
 import {
   ArrowLeft,
   MapPin,
@@ -134,9 +135,7 @@ export default function ComplaintDetail() {
               <p className="text-sm text-muted-foreground">ID: {complaint.complaint_number}</p>
             </div>
           </div>
-          {user?.role !== 'citizen' && complaint.status !== 'resolved' && (
-            <Button variant="accent">Update Status</Button>
-          )}
+          {/* Removed old Update Status button - now using StaffActionsPanel */}
         </div>
 
         <p className="text-muted-foreground mb-6">{complaint.description}</p>
@@ -176,6 +175,11 @@ export default function ComplaintDetail() {
           </div>
         </div>
       </div>
+
+      {/* Staff Actions Panel - Only visible to officers/admins */}
+      {user?.role && user.role !== 'citizen' && (
+        <StaffActionsPanel complaint={complaint} />
+      )}
 
       {/* Images */}
       {images.length > 0 && (
