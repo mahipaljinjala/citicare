@@ -8,9 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useUpdateComplaint, useDepartments, DbComplaint } from '@/hooks/useComplaints';
+import { useUpdateComplaint, useDepartments, useOfficers, DbComplaint } from '@/hooks/useComplaints';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, Building2, AlertTriangle } from 'lucide-react';
+import { Loader2, Settings, Building2, AlertTriangle, UserCheck } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StaffActionsPanelProps {
   complaint: DbComplaint;
@@ -33,16 +34,25 @@ const priorityOptions = [
 
 export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const updateComplaint = useUpdateComplaint();
   const { data: departments } = useDepartments();
 
   const [status, setStatus] = useState(complaint.status);
   const [departmentId, setDepartmentId] = useState(complaint.department_id || '');
+  const [assignedTo, setAssignedTo] = useState(complaint.assigned_to || '');
   const [priority, setPriority] = useState(complaint.priority);
+
+  // Fetch officers - filter by selected department if one is chosen
+  const { data: officers } = useOfficers(departmentId || null);
+
+  // Only department heads and admins can assign officers
+  const canAssignOfficer = user?.role === 'admin' || user?.role === 'department_head';
 
   const hasChanges =
     status !== complaint.status ||
     departmentId !== (complaint.department_id || '') ||
+    assignedTo !== (complaint.assigned_to || '') ||
     priority !== complaint.priority;
 
   const handleUpdate = async () => {
@@ -51,6 +61,7 @@ export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
         id: complaint.id,
         status,
         department_id: departmentId || null,
+        assigned_to: assignedTo || null,
         priority,
       });
       toast({
@@ -130,6 +141,33 @@ export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
             </SelectContent>
           </Select>
         </div>
+
+        {canAssignOfficer && (
+          <div className="space-y-2">
+            <Label htmlFor="officer" className="flex items-center gap-1">
+              <UserCheck className="h-4 w-4" />
+              Assign Officer
+            </Label>
+            <Select value={assignedTo} onValueChange={setAssignedTo}>
+              <SelectTrigger id="officer">
+                <SelectValue placeholder="Select officer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Unassigned</SelectItem>
+                {officers?.map((officer) => (
+                  <SelectItem key={officer.id} value={officer.id}>
+                    {officer.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {departmentId && officers?.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No officers in this department
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mt-4 flex justify-end">

@@ -287,6 +287,7 @@ export function useAddComment() {
 interface UpdateComplaintData {
   status?: 'pending' | 'in_progress' | 'resolved' | 'rejected' | 'closed';
   department_id?: string | null;
+  assigned_to?: string | null;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
 }
 
@@ -331,6 +332,49 @@ export function useDepartments() {
       
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+export interface Officer {
+  id: string;
+  full_name: string;
+  email: string;
+  department_id: string | null;
+}
+
+export function useOfficers(departmentId?: string | null) {
+  return useQuery({
+    queryKey: ['officers', departmentId],
+    queryFn: async () => {
+      // Get all users with officer role
+      const { data: officerRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'officer');
+      
+      if (rolesError) throw rolesError;
+      
+      const officerIds = officerRoles?.map(r => r.user_id) || [];
+      
+      if (officerIds.length === 0) return [];
+      
+      // Get profiles for these officers
+      let query = supabase
+        .from('profiles')
+        .select('id, full_name, email, department_id')
+        .in('id', officerIds)
+        .order('full_name');
+      
+      // Filter by department if specified
+      if (departmentId) {
+        query = query.eq('department_id', departmentId);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      return data as Officer[];
     },
   });
 }
