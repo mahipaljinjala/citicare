@@ -283,3 +283,54 @@ export function useAddComment() {
     },
   });
 }
+
+interface UpdateComplaintData {
+  status?: 'pending' | 'in_progress' | 'resolved' | 'rejected' | 'closed';
+  department_id?: string | null;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+}
+
+export function useUpdateComplaint() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: UpdateComplaintData & { id: string }) => {
+      const updateData: Record<string, any> = { ...data };
+      
+      // Set resolved_at when status changes to resolved
+      if (data.status === 'resolved') {
+        updateData.resolved_at = new Date().toISOString();
+      }
+
+      const { data: result, error } = await supabase
+        .from('complaints')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['complaints'] });
+      queryClient.invalidateQueries({ queryKey: ['complaint', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['complaint-stats'] });
+    },
+  });
+}
+
+export function useDepartments() {
+  return useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('id, name, code')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+}
