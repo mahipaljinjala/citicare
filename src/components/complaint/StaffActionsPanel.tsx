@@ -148,12 +148,12 @@ export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
               <UserCheck className="h-4 w-4" />
               Assign Officer
             </Label>
-            <Select value={assignedTo} onValueChange={setAssignedTo}>
+            <Select value={assignedTo || 'unassigned'} onValueChange={(val) => setAssignedTo(val === 'unassigned' ? '' : val)}>
               <SelectTrigger id="officer">
                 <SelectValue placeholder="Select officer" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
                 {officers?.map((officer) => (
                   <SelectItem key={officer.id} value={officer.id}>
                     {officer.full_name}
