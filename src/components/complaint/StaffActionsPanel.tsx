@@ -108,12 +108,12 @@ export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
             <Building2 className="h-4 w-4" />
             Department
           </Label>
-          <Select value={departmentId} onValueChange={setDepartmentId}>
+          <Select value={departmentId || 'unassigned'} onValueChange={(val) => setDepartmentId(val === 'unassigned' ? '' : val)}>
             <SelectTrigger id="department">
               <SelectValue placeholder="Assign department" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Unassigned</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
               {departments?.map((dept) => (
                 <SelectItem key={dept.id} value={dept.id}>
                   {dept.name}
