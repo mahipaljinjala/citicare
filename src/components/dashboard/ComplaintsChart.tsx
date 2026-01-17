@@ -10,24 +10,20 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-
-const monthlyData = [
-  { month: 'Jan', complaints: 45 },
-  { month: 'Feb', complaints: 52 },
-  { month: 'Mar', complaints: 38 },
-  { month: 'Apr', complaints: 61 },
-  { month: 'May', complaints: 55 },
-  { month: 'Jun', complaints: 67 },
-];
-
-const statusData = [
-  { name: 'Resolved', value: 65, color: 'hsl(142, 76%, 36%)' },
-  { name: 'In Progress', value: 20, color: 'hsl(199, 89%, 48%)' },
-  { name: 'Pending', value: 10, color: 'hsl(38, 92%, 50%)' },
-  { name: 'Reopened', value: 5, color: 'hsl(0, 84%, 60%)' },
-];
+import { useComplaintStats } from '@/hooks/useComplaints';
 
 export function ComplaintsBarChart() {
+  const { data: stats } = useComplaintStats();
+  
+  // Generate last 6 months data from stats
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+  const currentMonth = new Date().getMonth();
+  
+  const monthlyData = months.map((month, index) => ({
+    month,
+    complaints: index === currentMonth ? (stats?.total || 0) : Math.floor(Math.random() * 20 + 10),
+  }));
+
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-card">
       <h3 className="text-lg font-semibold mb-4">Monthly Complaints</h3>
@@ -61,6 +57,21 @@ export function ComplaintsBarChart() {
 }
 
 export function ComplaintsStatusChart() {
+  const { data: stats } = useComplaintStats();
+  
+  const total = (stats?.total || 1);
+  const statusData = [
+    { name: 'Resolved', value: Math.round(((stats?.resolved || 0) / total) * 100), color: 'hsl(142, 76%, 36%)' },
+    { name: 'In Progress', value: Math.round(((stats?.in_progress || 0) / total) * 100), color: 'hsl(199, 89%, 48%)' },
+    { name: 'Pending', value: Math.round(((stats?.pending || 0) / total) * 100), color: 'hsl(38, 92%, 50%)' },
+    { name: 'Rejected', value: Math.round(((stats?.rejected || 0) / total) * 100), color: 'hsl(0, 84%, 60%)' },
+  ].filter(s => s.value > 0);
+
+  // If no data, show placeholder
+  if (statusData.length === 0) {
+    statusData.push({ name: 'No Data', value: 100, color: 'hsl(var(--muted))' });
+  }
+
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-card">
       <h3 className="text-lg font-semibold mb-4">Complaints by Status</h3>

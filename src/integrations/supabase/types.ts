@@ -304,6 +304,69 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          budget: number | null
+          created_at: string
+          created_by: string | null
+          department_id: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          progress: number | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+          ward_id: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          progress?: number | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          ward_id?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          progress?: number | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          ward_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_ward_id_fkey"
+            columns: ["ward_id"]
+            isOneToOne: false
+            referencedRelation: "wards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string

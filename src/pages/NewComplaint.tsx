@@ -16,17 +16,7 @@ import { ImageUpload } from '@/components/complaint/ImageUpload';
 import { useCreateComplaint } from '@/hooks/useComplaints';
 import { MapPin, Loader2, CheckCircle, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-const complaintCategories = [
-  { value: 'roads', label: 'Roads & Potholes', icon: '🛣️' },
-  { value: 'water', label: 'Water Supply', icon: '💧' },
-  { value: 'electricity', label: 'Electricity', icon: '⚡' },
-  { value: 'garbage', label: 'Garbage Collection', icon: '🗑️' },
-  { value: 'sewage', label: 'Sewage & Drainage', icon: '🚰' },
-  { value: 'street_lights', label: 'Street Lights', icon: '💡' },
-  { value: 'parks', label: 'Parks & Gardens', icon: '🌳' },
-  { value: 'other', label: 'Other Issues', icon: '📋' },
-];
+import { complaintCategories } from '@/data/categories';
 
 export default function NewComplaint() {
   const [title, setTitle] = useState('');
