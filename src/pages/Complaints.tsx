@@ -14,26 +14,7 @@ import {
 import { Search, Filter, PlusCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-
-const complaintCategories = [
-  { value: 'roads', label: 'Roads & Potholes', icon: '🛣️' },
-  { value: 'water', label: 'Water Supply', icon: '💧' },
-  { value: 'electricity', label: 'Electricity', icon: '⚡' },
-  { value: 'garbage', label: 'Garbage Collection', icon: '🗑️' },
-  { value: 'sewage', label: 'Sewage & Drainage', icon: '🚰' },
-  { value: 'street_lights', label: 'Street Lights', icon: '💡' },
-  { value: 'parks', label: 'Parks & Gardens', icon: '🌳' },
-  { value: 'other', label: 'Other Issues', icon: '📋' },
-];
-
-const statusFilters = [
-  { value: 'all', label: 'All Status' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'resolved', label: 'Resolved' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'closed', label: 'Closed' },
-];
+import { complaintCategories, statusFilters } from '@/data/categories';
 
 export default function Complaints() {
   const { user } = useAuth();
