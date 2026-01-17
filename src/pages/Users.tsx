@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { useUsers, useCreateUser, useUpdateUserRole, useUpdateUserDepartment, CreateUserData } from '@/hooks/useUsers';
+import { useUsers, useCreateUser, useUpdateUserRole, useUpdateUserDepartment, useDeleteUser, CreateUserData } from '@/hooks/useUsers';
 import { useDepartments } from '@/hooks/useComplaints';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -34,7 +44,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Users, Loader2, Pencil, Building2, Shield } from 'lucide-react';
+import { Plus, Users, Loader2, Pencil, Building2, Shield, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const roleColors: Record<string, string> = {
@@ -52,9 +62,12 @@ export default function UsersPage() {
   const createUser = useCreateUser();
   const updateRole = useUpdateUserRole();
   const updateDepartment = useUpdateUserDepartment();
+  const deleteUser = useDeleteUser();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [deleteUserName, setDeleteUserName] = useState<string>('');
   const [newUser, setNewUser] = useState<CreateUserData>({
     email: '',
     password: '',
@@ -128,6 +141,31 @@ export default function UsersPage() {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUserId) return;
+    
+    try {
+      await deleteUser.mutateAsync(deleteUserId);
+      toast({
+        title: 'User deleted',
+        description: `${deleteUserName} has been removed from the system.`,
+      });
+      setDeleteUserId(null);
+      setDeleteUserName('');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete user',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const confirmDelete = (userId: string, userName: string) => {
+    setDeleteUserId(userId);
+    setDeleteUserName(userName);
   };
 
   const getInitials = (name: string) => {
@@ -405,13 +443,25 @@ export default function UsersPage() {
                       {format(new Date(u.created_at), 'MMM d, yyyy')}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingUser(editingUser === u.id ? null : u.id)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingUser(editingUser === u.id ? null : u.id)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {u.id !== user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => confirmDelete(u.id, u.full_name)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -420,6 +470,30 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteUserName}</strong>? 
+              This action cannot be undone. All data associated with this user will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteUser.isPending}
+            >
+              {deleteUser.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

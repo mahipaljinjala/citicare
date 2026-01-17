@@ -15,6 +15,10 @@ import ComplaintDetail from "./pages/ComplaintDetail";
 import Projects from "./pages/Projects";
 import Documents from "./pages/Documents";
 import Users from "./pages/Users";
+import Departments from "./pages/Departments";
+import Analytics from "./pages/Analytics";
+import CityMap from "./pages/CityMap";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +42,10 @@ const App = () => (
               <Route path="/projects" element={<Projects />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/users" element={<Users />} />
+              <Route path="/departments" element={<Departments />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/map" element={<CityMap />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
