@@ -1,5 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
+import { useDepartments } from '@/hooks/useComplaints';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,12 +10,21 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Settings as SettingsIcon, User, Bell, Shield, Palette, Save } from 'lucide-react';
-import { useState } from 'react';
+import { Settings as SettingsIcon, User, Bell, Shield, Save, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { data: departments } = useDepartments();
+  const updateProfile = useUpdateProfile();
+
+  const [formData, setFormData] = useState({
+    full_name: '',
+    phone: '',
+  });
+
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -21,16 +32,38 @@ export default function Settings() {
     comments: true,
   });
 
+  // Update form when profile loads
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        phone: profile.phone || '',
+      });
+    }
+  }, [profile]);
+
   // Only admins can access full settings
   if (user?.role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleSave = () => {
-    toast({
-      title: 'Settings saved',
-      description: 'Your settings have been updated successfully.',
-    });
+  const handleSave = async () => {
+    try {
+      await updateProfile.mutateAsync({
+        full_name: formData.full_name,
+        phone: formData.phone || undefined,
+      });
+      toast({
+        title: 'Settings saved',
+        description: 'Your profile has been updated successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save settings. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getInitials = (name: string) => {
@@ -41,6 +74,14 @@ export default function Settings() {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  if (profileLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -65,9 +106,9 @@ export default function Settings() {
         <CardContent className="space-y-6">
           <div className="flex items-center gap-6">
             <Avatar className="h-20 w-20">
-              <AvatarImage src="" />
+              <AvatarImage src={profile?.avatar_url || ''} />
               <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                {getInitials(user?.name || 'Admin')}
+                {getInitials(profile?.full_name || 'User')}
               </AvatarFallback>
             </Avatar>
             <div className="space-y-2">
@@ -85,19 +126,39 @@ export default function Settings() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" defaultValue={user?.name} />
+              <Input 
+                id="name" 
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue={user?.email} />
+              <Input 
+                id="email" 
+                type="email" 
+                value={profile?.email || ''} 
+                disabled 
+                className="bg-muted"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" placeholder="+91 98765 43210" />
+              <Input 
+                id="phone" 
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+91 98765 43210" 
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="department">Department</Label>
-              <Input id="department" disabled value="Administration" />
+              <Input 
+                id="department" 
+                disabled 
+                value={profile?.department_name || 'Not assigned'} 
+                className="bg-muted"
+              />
             </div>
           </div>
         </CardContent>
@@ -261,8 +322,12 @@ export default function Settings() {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave}>
-          <Save className="h-4 w-4 mr-2" />
+        <Button onClick={handleSave} disabled={updateProfile.isPending}>
+          {updateProfile.isPending ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
           Save Changes
         </Button>
       </div>

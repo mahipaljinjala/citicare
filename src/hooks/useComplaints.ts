@@ -207,6 +207,58 @@ export function useComplaintStats() {
   });
 }
 
+export function useMonthlyComplaintStats() {
+  const { user, session } = useAuth();
+
+  return useQuery({
+    queryKey: ['monthly-complaint-stats', user?.id],
+    queryFn: async () => {
+      // Get complaints from the last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      let query = supabase
+        .from('complaints')
+        .select('created_at')
+        .gte('created_at', sixMonthsAgo.toISOString());
+
+      if (user?.role === 'citizen' && user.id) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+
+      // Group by month
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const currentMonth = new Date().getMonth();
+      
+      // Initialize last 6 months with 0
+      const monthlyData: { month: string; complaints: number }[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthIndex = (currentMonth - i + 12) % 12;
+        monthlyData.push({ month: months[monthIndex], complaints: 0 });
+      }
+
+      // Count complaints per month
+      data?.forEach((complaint: { created_at: string }) => {
+        const complaintDate = new Date(complaint.created_at);
+        const monthIndex = complaintDate.getMonth();
+        const monthName = months[monthIndex];
+        
+        const monthEntry = monthlyData.find(m => m.month === monthName);
+        if (monthEntry) {
+          monthEntry.complaints++;
+        }
+      });
+
+      return monthlyData;
+    },
+    enabled: !!session,
+  });
+}
+
 export interface DbComment {
   id: string;
   complaint_id: string;
