@@ -347,7 +347,7 @@ export function useUpdateComplaint() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...data }: UpdateComplaintData & { id: string }) => {
+    mutationFn: async ({ id, oldStatus, ...data }: UpdateComplaintData & { id: string; oldStatus?: string }) => {
       const updateData: Record<string, any> = { ...data };
       
       // Set resolved_at when status changes to resolved
@@ -359,10 +359,30 @@ export function useUpdateComplaint() {
         .from('complaints')
         .update(updateData)
         .eq('id', id)
-        .select()
+        .select('*, departments(name)')
         .single();
       
       if (error) throw error;
+
+      // Send email notification if status changed
+      if (data.status && oldStatus && data.status !== oldStatus) {
+        try {
+          await supabase.functions.invoke('send-status-notification', {
+            body: {
+              complaint_id: result.id,
+              old_status: oldStatus,
+              new_status: data.status,
+              complaint_number: result.complaint_number,
+              complaint_title: result.title,
+            },
+          });
+          console.log('Status notification sent');
+        } catch (notifError) {
+          console.error('Failed to send notification:', notifError);
+          // Don't throw - notification failure shouldn't block the update
+        }
+      }
+
       return result;
     },
     onSuccess: (data) => {

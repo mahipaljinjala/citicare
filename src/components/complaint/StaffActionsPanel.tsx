@@ -59,6 +59,7 @@ export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
     try {
       await updateComplaint.mutateAsync({
         id: complaint.id,
+        oldStatus: complaint.status, // Pass old status for email notification
         status,
         department_id: departmentId || null,
         assigned_to: assignedTo || null,
@@ -66,7 +67,9 @@ export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
       });
       toast({
         title: 'Complaint updated',
-        description: 'The complaint has been updated successfully.',
+        description: status !== complaint.status 
+          ? 'The complaint has been updated and the user has been notified.'
+          : 'The complaint has been updated successfully.',
       });
     } catch (error: any) {
       toast({

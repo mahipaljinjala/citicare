@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
 import { useSystemSettings, useUpdateSystemSetting, useUploadAvatar, useChangePassword } from '@/hooks/useSettings';
+import { useTwoFactor } from '@/hooks/useTwoFactor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +12,9 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Settings as SettingsIcon, User, Bell, Shield, Save, Loader2, Upload } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, Save, Loader2, Upload, Smartphone, CheckCircle, XCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -23,6 +25,7 @@ export default function Settings() {
   const updateSystemSetting = useUpdateSystemSetting();
   const uploadAvatar = useUploadAvatar();
   const changePassword = useChangePassword();
+  const twoFactor = useTwoFactor();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -43,6 +46,23 @@ export default function Settings() {
     new: '',
     confirm: '',
   });
+
+  const [twoFactorDialog, setTwoFactorDialog] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [existingFactors, setExistingFactors] = useState<any[]>([]);
+  const [loadingFactors, setLoadingFactors] = useState(true);
+
+  // Load existing 2FA factors
+  useEffect(() => {
+    const loadFactors = async () => {
+      const result = await twoFactor.getFactors();
+      if (result.success) {
+        setExistingFactors(result.factors || []);
+      }
+      setLoadingFactors(false);
+    };
+    loadFactors();
+  }, []);
 
   // Update form when profile loads
   useEffect(() => {
@@ -92,7 +112,6 @@ export default function Settings() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
       toast({
         title: 'File too large',
@@ -102,7 +121,6 @@ export default function Settings() {
       return;
     }
 
-    // Validate file type
     if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
       toast({
         title: 'Invalid file type',
@@ -182,6 +200,47 @@ export default function Settings() {
     }
   };
 
+  const handleEnable2FA = async () => {
+    setTwoFactorDialog(true);
+    await twoFactor.enrollTOTP();
+  };
+
+  const handleVerify2FA = async () => {
+    if (otpCode.length !== 6) {
+      toast({
+        title: 'Invalid code',
+        description: 'Please enter a 6-digit code.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const result = await twoFactor.verifyTOTP(otpCode);
+    if (result.success) {
+      setTwoFactorDialog(false);
+      setOtpCode('');
+      const factorsResult = await twoFactor.getFactors();
+      if (factorsResult.success) {
+        setExistingFactors(factorsResult.factors || []);
+      }
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (existingFactors.length > 0) {
+      const result = await twoFactor.unenrollTOTP(existingFactors[0].id);
+      if (result.success) {
+        setExistingFactors([]);
+      }
+    }
+  };
+
+  const handleClose2FADialog = () => {
+    setTwoFactorDialog(false);
+    setOtpCode('');
+    twoFactor.cancelEnrollment();
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -190,6 +249,8 @@ export default function Settings() {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const is2FAEnabled = existingFactors.length > 0;
 
   if (profileLoading || settingsLoading) {
     return (
@@ -446,16 +507,112 @@ export default function Settings() {
           </div>
           <Separator />
           <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Two-Factor Authentication</p>
-              <p className="text-sm text-muted-foreground">
-                Add an extra layer of security
-              </p>
+            <div className="flex items-center gap-3">
+              <Smartphone className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">Two-Factor Authentication</p>
+                  {is2FAEnabled ? (
+                    <span className="flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                      <CheckCircle className="h-3 w-3" />
+                      Enabled
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      <XCircle className="h-3 w-3" />
+                      Disabled
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Add an extra layer of security with TOTP
+                </p>
+              </div>
             </div>
-            <Button variant="outline" size="sm" disabled>
-              Coming Soon
-            </Button>
+            {loadingFactors ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : is2FAEnabled ? (
+              <Button variant="destructive" size="sm" onClick={handleDisable2FA}>
+                Disable
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleEnable2FA}>
+                Enable
+              </Button>
+            )}
           </div>
+
+          {/* 2FA Setup Dialog */}
+          <Dialog open={twoFactorDialog} onOpenChange={handleClose2FADialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Set Up Two-Factor Authentication</DialogTitle>
+                <DialogDescription>
+                  Scan the QR code with your authenticator app (like Google Authenticator or Authy), then enter the 6-digit code.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {twoFactor.isEnrolling ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : twoFactor.qrCode ? (
+                <div className="space-y-6">
+                  <div className="flex justify-center">
+                    <img 
+                      src={twoFactor.qrCode} 
+                      alt="2FA QR Code" 
+                      className="w-48 h-48 border rounded-lg"
+                    />
+                  </div>
+                  
+                  {twoFactor.secret && (
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Or enter this code manually:
+                      </p>
+                      <code className="bg-muted px-3 py-1 rounded text-sm font-mono">
+                        {twoFactor.secret}
+                      </code>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label>Enter the 6-digit code from your app</Label>
+                    <div className="flex justify-center">
+                      <InputOTP
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={setOtpCode}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={handleClose2FADialog}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleVerify2FA} 
+                  disabled={twoFactor.isVerifying || otpCode.length !== 6}
+                >
+                  {twoFactor.isVerifying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Verify & Enable
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 
