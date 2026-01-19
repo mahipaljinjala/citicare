@@ -10,6 +10,10 @@ export interface Profile {
   avatar_url: string | null;
   department_id: string | null;
   department_name?: string | null;
+  notification_email: boolean;
+  notification_push: boolean;
+  notification_status_updates: boolean;
+  notification_comments: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +55,10 @@ export interface UpdateProfileData {
   full_name?: string;
   phone?: string;
   avatar_url?: string;
+  notification_email?: boolean;
+  notification_push?: boolean;
+  notification_status_updates?: boolean;
+  notification_comments?: boolean;
 }
 
 export function useUpdateProfile() {

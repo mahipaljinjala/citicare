@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
-import { useDepartments } from '@/hooks/useComplaints';
+import { useSystemSettings, useUpdateSystemSetting, useUploadAvatar, useChangePassword } from '@/hooks/useSettings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,16 +9,21 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Settings as SettingsIcon, User, Bell, Shield, Save, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Settings as SettingsIcon, User, Bell, Shield, Save, Loader2, Upload } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: profile, isLoading: profileLoading } = useProfile();
-  const { data: departments } = useDepartments();
+  const { data: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const updateProfile = useUpdateProfile();
+  const updateSystemSetting = useUpdateSystemSetting();
+  const uploadAvatar = useUploadAvatar();
+  const changePassword = useChangePassword();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -32,12 +37,25 @@ export default function Settings() {
     comments: true,
   });
 
+  const [passwordDialog, setPasswordDialog] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    current: '',
+    new: '',
+    confirm: '',
+  });
+
   // Update form when profile loads
   useEffect(() => {
     if (profile) {
       setFormData({
         full_name: profile.full_name || '',
         phone: profile.phone || '',
+      });
+      setNotifications({
+        email: profile.notification_email ?? true,
+        push: profile.notification_push ?? true,
+        statusUpdates: profile.notification_status_updates ?? true,
+        comments: profile.notification_comments ?? true,
       });
     }
   }, [profile]);
@@ -52,6 +70,10 @@ export default function Settings() {
       await updateProfile.mutateAsync({
         full_name: formData.full_name,
         phone: formData.phone || undefined,
+        notification_email: notifications.email,
+        notification_push: notifications.push,
+        notification_status_updates: notifications.statusUpdates,
+        notification_comments: notifications.comments,
       });
       toast({
         title: 'Settings saved',
@@ -66,6 +88,100 @@ export default function Settings() {
     }
   };
 
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please select an image under 2MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file type
+    if (!['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please select a JPG, PNG, or GIF image.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await uploadAvatar.mutateAsync(file);
+      toast({
+        title: 'Avatar updated',
+        description: 'Your profile picture has been changed.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload avatar. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (passwordData.new !== passwordData.confirm) {
+      toast({
+        title: 'Passwords do not match',
+        description: 'Please make sure your new passwords match.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (passwordData.new.length < 6) {
+      toast({
+        title: 'Password too short',
+        description: 'Password must be at least 6 characters.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await changePassword.mutateAsync({
+        currentPassword: passwordData.current,
+        newPassword: passwordData.new,
+      });
+      toast({
+        title: 'Password changed',
+        description: 'Your password has been updated successfully.',
+      });
+      setPasswordDialog(false);
+      setPasswordData({ current: '', new: '', confirm: '' });
+    } catch (error) {
+      toast({
+        title: 'Failed to change password',
+        description: 'Please check your current password and try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSystemSettingChange = async (key: string, value: boolean) => {
+    try {
+      await updateSystemSetting.mutateAsync({ key, value });
+      toast({
+        title: 'Setting updated',
+        description: 'System configuration has been saved.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update setting.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -75,7 +191,7 @@ export default function Settings() {
       .slice(0, 2);
   };
 
-  if (profileLoading) {
+  if (profileLoading || settingsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
@@ -112,7 +228,24 @@ export default function Settings() {
               </AvatarFallback>
             </Avatar>
             <div className="space-y-2">
-              <Button variant="outline" size="sm">
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/jpeg,image/png,image/gif"
+                onChange={handleAvatarChange}
+              />
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadAvatar.isPending}
+              >
+                {uploadAvatar.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-2" />
+                )}
                 Change Avatar
               </Button>
               <p className="text-xs text-muted-foreground">
@@ -257,9 +390,59 @@ export default function Settings() {
                 Update your account password
               </p>
             </div>
-            <Button variant="outline" size="sm">
-              Change
-            </Button>
+            <Dialog open={passwordDialog} onOpenChange={setPasswordDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  Change
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Change Password</DialogTitle>
+                  <DialogDescription>
+                    Enter your current password and a new password.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={passwordData.current}
+                      onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={passwordData.new}
+                      onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={passwordData.confirm}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPasswordDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handlePasswordChange} disabled={changePassword.isPending}>
+                    {changePassword.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Update Password
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -269,8 +452,8 @@ export default function Settings() {
                 Add an extra layer of security
               </p>
             </div>
-            <Button variant="outline" size="sm">
-              Enable
+            <Button variant="outline" size="sm" disabled>
+              Coming Soon
             </Button>
           </div>
         </CardContent>
@@ -295,7 +478,11 @@ export default function Settings() {
                 Automatically assign complaints to officers
               </p>
             </div>
-            <Switch defaultChecked />
+            <Switch 
+              checked={systemSettings?.auto_assign_complaints ?? true}
+              onCheckedChange={(checked) => handleSystemSettingChange('auto_assign_complaints', checked)}
+              disabled={updateSystemSetting.isPending}
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -305,7 +492,11 @@ export default function Settings() {
                 Require email confirmation for new accounts
               </p>
             </div>
-            <Switch />
+            <Switch 
+              checked={systemSettings?.email_confirmations ?? false}
+              onCheckedChange={(checked) => handleSystemSettingChange('email_confirmations', checked)}
+              disabled={updateSystemSetting.isPending}
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -315,7 +506,11 @@ export default function Settings() {
                 Temporarily disable public access
               </p>
             </div>
-            <Switch />
+            <Switch 
+              checked={systemSettings?.maintenance_mode ?? false}
+              onCheckedChange={(checked) => handleSystemSettingChange('maintenance_mode', checked)}
+              disabled={updateSystemSetting.isPending}
+            />
           </div>
         </CardContent>
       </Card>

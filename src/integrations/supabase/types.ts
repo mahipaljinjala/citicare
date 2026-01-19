@@ -279,6 +279,10 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          notification_comments: boolean | null
+          notification_email: boolean | null
+          notification_push: boolean | null
+          notification_status_updates: boolean | null
           phone: string | null
           updated_at: string
         }
@@ -289,6 +293,10 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          notification_comments?: boolean | null
+          notification_email?: boolean | null
+          notification_push?: boolean | null
+          notification_status_updates?: boolean | null
           phone?: string | null
           updated_at?: string
         }
@@ -299,6 +307,10 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          notification_comments?: boolean | null
+          notification_email?: boolean | null
+          notification_push?: boolean | null
+          notification_status_updates?: boolean | null
           phone?: string | null
           updated_at?: string
         }
@@ -366,6 +378,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
