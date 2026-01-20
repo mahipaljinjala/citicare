@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -8,9 +9,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useUpdateComplaint, useDepartments, useOfficers, DbComplaint } from '@/hooks/useComplaints';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useUpdateComplaint, useDeleteComplaint, useDepartments, useOfficers, DbComplaint } from '@/hooks/useComplaints';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, Building2, AlertTriangle, UserCheck } from 'lucide-react';
+import { Loader2, Settings, Building2, AlertTriangle, UserCheck, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface StaffActionsPanelProps {
@@ -35,7 +47,9 @@ const priorityOptions = [
 export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const updateComplaint = useUpdateComplaint();
+  const deleteComplaint = useDeleteComplaint();
   const { data: departments } = useDepartments();
 
   const [status, setStatus] = useState(complaint.status);
@@ -47,6 +61,7 @@ export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
   const { data: officers } = useOfficers(departmentId || null);
 
   // Only department heads and admins can assign officers
+  const isAdmin = user?.role === 'admin';
   const canAssignOfficer = user?.role === 'admin' || user?.role === 'department_head';
 
   const hasChanges =
@@ -74,6 +89,23 @@ export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
     } catch (error: any) {
       toast({
         title: 'Update failed',
+        description: error.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteComplaint.mutateAsync(complaint.id);
+      toast({
+        title: 'Complaint deleted',
+        description: 'The complaint has been permanently deleted.',
+      });
+      navigate('/complaints');
+    } catch (error: any) {
+      toast({
+        title: 'Delete failed',
         description: error.message || 'Please try again.',
         variant: 'destructive',
       });
@@ -173,15 +205,47 @@ export function StaffActionsPanel({ complaint }: StaffActionsPanelProps) {
         )}
       </div>
 
-      <div className="mt-4 flex justify-end">
-        <Button
-          variant="accent"
-          disabled={!hasChanges || updateComplaint.isPending}
-          onClick={handleUpdate}
-        >
-          {updateComplaint.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Changes
-        </Button>
+      <div className="mt-4 flex justify-between items-center">
+        {isAdmin && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Complaint
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Complaint</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete complaint #{complaint.complaint_number}? 
+                  This action cannot be undone. All associated images and comments will also be deleted.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={deleteComplaint.isPending}
+                >
+                  {deleteComplaint.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+        <div className={!isAdmin ? 'ml-auto' : ''}>
+          <Button
+            variant="accent"
+            disabled={!hasChanges || updateComplaint.isPending}
+            onClick={handleUpdate}
+          >
+            {updateComplaint.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </div>
       </div>
     </div>
   );

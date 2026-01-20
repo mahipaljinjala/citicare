@@ -393,6 +393,45 @@ export function useUpdateComplaint() {
   });
 }
 
+export function useDeleteComplaint() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // First delete related images from storage
+      const { data: images } = await supabase
+        .from('complaint_images')
+        .select('url')
+        .eq('complaint_id', id);
+
+      if (images && images.length > 0) {
+        // Extract file paths from URLs and delete from storage
+        const filePaths = images.map(img => {
+          const url = new URL(img.url);
+          const pathParts = url.pathname.split('/complaint-images/');
+          return pathParts.length > 1 ? pathParts[1] : '';
+        }).filter(Boolean);
+
+        if (filePaths.length > 0) {
+          await supabase.storage.from('complaint-images').remove(filePaths);
+        }
+      }
+
+      // Delete complaint (cascade will handle images and comments)
+      const { error } = await supabase
+        .from('complaints')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['complaints'] });
+      queryClient.invalidateQueries({ queryKey: ['complaint-stats'] });
+    },
+  });
+}
+
 export function useDepartments() {
   return useQuery({
     queryKey: ['departments'],
