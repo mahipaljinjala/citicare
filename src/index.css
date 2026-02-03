@@ -2,11 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    /* Government-grade color palette */
+    /* Government of India Color Palette */
     --background: 210 20% 98%;
     --foreground: 222 47% 11%;
 
@@ -16,23 +16,23 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Deep navy blue - trust & authority */
-    --primary: 222 47% 20%;
-    --primary-foreground: 210 40% 98%;
+    /* Government Blue - Primary (#0F3D91) */
+    --primary: 220 80% 31%;
+    --primary-foreground: 0 0% 100%;
 
     /* Light blue-gray for secondary elements */
     --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 20%;
+    --secondary-foreground: 220 80% 31%;
 
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    /* Accent blue for CTAs */
-    --accent: 217 91% 50%;
+    /* Saffron Accent (#FF9933) */
+    --accent: 30 100% 60%;
     --accent-foreground: 0 0% 100%;
 
-    /* Status colors */
-    --success: 142 76% 36%;
+    /* India Green (#138808) */
+    --success: 120 88% 28%;
     --success-foreground: 0 0% 100%;
     
     --warning: 38 92% 50%;
@@ -46,14 +46,21 @@
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 217 91% 50%;
+    --ring: 220 80% 31%;
 
-    --radius: 0.625rem;
+    --radius: 0.5rem;
+
+    /* Indian Government Colors */
+    --saffron: 30 100% 60%;
+    --india-green: 120 88% 28%;
+    --navy: 220 80% 31%;
+    --chakra-blue: 217 91% 50%;
 
     /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(222 47% 20%) 0%, hsl(217 91% 35%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(217 91% 50%) 0%, hsl(199 89% 48%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(210 20% 98%) 0%, hsl(217 91% 97%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(220 80% 31%) 0%, hsl(220 80% 20%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(30 100% 60%) 0%, hsl(30 100% 50%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(220 80% 31%) 0%, hsl(220 80% 20%) 100%);
+    --gradient-tricolor: linear-gradient(180deg, hsl(30 100% 60%) 0%, hsl(0 0% 100%) 50%, hsl(120 88% 28%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 40% 99%) 100%);
 
     /* Shadows */
@@ -61,16 +68,16 @@
     --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.1), 0 2px 4px -2px hsl(222 47% 11% / 0.1);
     --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.1), 0 4px 6px -4px hsl(222 47% 11% / 0.1);
     --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.1), 0 8px 10px -6px hsl(222 47% 11% / 0.1);
-    --shadow-glow: 0 0 40px hsl(217 91% 50% / 0.15);
+    --shadow-glow: 0 0 40px hsl(220 80% 31% / 0.15);
 
-    --sidebar-background: 222 47% 20%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-background: 220 80% 31%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 30 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 28%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 28%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 220 80% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 80% 25%;
+    --sidebar-ring: 30 100% 60%;
   }
 
   .dark {
@@ -83,8 +90,8 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 220 80% 50%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 222 47% 15%;
     --secondary-foreground: 210 40% 98%;
@@ -92,10 +99,10 @@
     --muted: 222 47% 15%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 217 91% 50%;
+    --accent: 30 100% 60%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 142 76% 45%;
+    --success: 120 88% 35%;
     --success-foreground: 0 0% 100%;
     
     --warning: 38 92% 55%;
@@ -109,16 +116,21 @@
 
     --border: 222 47% 20%;
     --input: 222 47% 20%;
-    --ring: 217 91% 50%;
+    --ring: 220 80% 50%;
+
+    --saffron: 30 100% 60%;
+    --india-green: 120 88% 35%;
+    --navy: 220 80% 50%;
+    --chakra-blue: 217 91% 60%;
 
     --sidebar-background: 222 47% 8%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 30 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 47% 15%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222 47% 15%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 30 100% 60%;
   }
 }
 
@@ -133,6 +145,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
     @apply font-semibold tracking-tight;
   }
 }
@@ -150,8 +163,40 @@
     background: var(--gradient-hero);
   }
 
+  .gradient-tricolor {
+    background: var(--gradient-tricolor);
+  }
+
   .gradient-card {
     background: var(--gradient-card);
+  }
+
+  .bg-saffron {
+    background-color: hsl(var(--saffron));
+  }
+
+  .bg-india-green {
+    background-color: hsl(var(--india-green));
+  }
+
+  .bg-navy {
+    background-color: hsl(var(--navy));
+  }
+
+  .text-saffron {
+    color: hsl(var(--saffron));
+  }
+
+  .text-india-green {
+    color: hsl(var(--india-green));
+  }
+
+  .text-navy {
+    color: hsl(var(--navy));
+  }
+
+  .border-saffron {
+    border-color: hsl(var(--saffron));
   }
 
   .shadow-elegant {
@@ -164,6 +209,15 @@
 
   .glass-card {
     @apply bg-card/80 backdrop-blur-md border border-border/50;
+  }
+
+  .govt-card {
+    @apply bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  .tricolor-top {
+    border-top: 3px solid;
+    border-image: linear-gradient(90deg, hsl(30 100% 60%) 33.33%, hsl(0 0% 100%) 33.33%, hsl(0 0% 100%) 66.66%, hsl(120 88% 28%) 66.66%) 1;
   }
 
   .status-pending {
@@ -192,6 +246,10 @@
 
   .animate-scale-in {
     animation: scaleIn 0.3s ease-out forwards;
+  }
+
+  .news-ticker {
+    animation: ticker 30s linear infinite;
   }
 }
 
@@ -223,6 +281,15 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
   }
 }
 
